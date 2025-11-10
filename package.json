@@ -1,0 +1,30 @@
+{
+  "name": "@alternatefutures/docs",
+  "version": "1.0.0",
+  "description": "Documentation for Alternate Futures platform",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "generate:cli": "node scripts/generate-cli-docs.js",
+    "generate:sdk": "node scripts/generate-sdk-docs.js",
+    "generate:all": "npm run generate:cli && npm run generate:sdk",
+    "build": "npm run generate:all && npm run docs:build"
+  },
+  "keywords": [
+    "alternate-futures",
+    "documentation",
+    "cli",
+    "sdk",
+    "depin"
+  ],
+  "author": "Alternate Futures",
+  "license": "MIT",
+  "devDependencies": {
+    "markdown-it-container": "^4.0.0",
+    "typedoc": "^0.25.7",
+    "typedoc-plugin-markdown": "^3.17.1",
+    "vitepress": "^1.0.0"
+  }
+}

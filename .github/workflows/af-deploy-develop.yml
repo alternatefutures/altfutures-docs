@@ -1,0 +1,21 @@
+name: ⚡️ Deploy Documentation (Develop)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+  # Trigger from CLI/SDK repo updates
+  repository_dispatch:
+    types: [docs-update-develop]
+
+jobs:
+  deploy-to-develop:
+    uses: ./.github/workflows/af-deploy-common.yml
+    with:
+      environment: develop
+      branch: develop
+      network: ipfs
+    secrets:
+      af_api_key: ${{ secrets.AF_API_KEY }}
+      gh_pat: ${{ secrets.GH_PAT }}

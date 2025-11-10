@@ -1,0 +1,96 @@
+name: ⚡️ Deploy Documentation (Common)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      network:
+        required: false
+        type: string
+        default: ipfs
+    secrets:
+      af_api_key:
+        required: true
+      gh_pat:
+        required: false
+
+env:
+  TARGET_ENVIRONMENT: ${{ inputs.environment }}
+  AF_API_KEY: ${{ secrets.af_api_key }}
+
+jobs:
+  deploy-to-alternate-futures:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Checkout cloud-cli repo
+        uses: actions/checkout@v4
+        with:
+          repository: alternatefutures/cloud-cli
+          path: cloud-cli
+          ref: ${{ inputs.branch }}
+          token: ${{ secrets.gh_pat || github.token }}
+
+      - name: Checkout cloud-sdk repo
+        uses: actions/checkout@v4
+        with:
+          repository: alternatefutures/cloud-sdk
+          path: cloud-sdk
+          ref: ${{ inputs.branch }}
+          token: ${{ secrets.gh_pat || github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies (docs)
+        run: pnpm install
+
+      - name: Install dependencies (CLI)
+        run: cd cloud-cli && pnpm install
+
+      - name: Install dependencies (SDK)
+        run: cd cloud-sdk && pnpm install
+
+      - name: Generate CLI documentation
+        run: cd cloud-cli && pnpm docs:generate
+
+      - name: Generate SDK documentation
+        run: cd cloud-sdk && pnpm docs:generate
+
+      - name: Build with VitePress
+        run: pnpm run build
+
+      - name: Install Alternate Futures CLI
+        run: npm install -g @alternatefutures/cli
+
+      - name: Deploy to Alternate Futures
+        run: af sites deploy docs/.vitepress/dist --network ${{ inputs.network }}

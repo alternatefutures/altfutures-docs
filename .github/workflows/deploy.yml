@@ -1,0 +1,105 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+  # Allow manual trigger
+  workflow_dispatch:
+  # Trigger from CLI/SDK repo updates
+  repository_dispatch:
+    types: [docs-update]
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+
+      - name: Checkout cloud-cli repo
+        uses: actions/checkout@v4
+        with:
+          repository: alternatefutures/cloud-cli
+          path: cloud-cli
+          ref: develop
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Checkout cloud-sdk repo
+        uses: actions/checkout@v4
+        with:
+          repository: alternatefutures/cloud-sdk
+          path: cloud-sdk
+          ref: develop
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies (docs)
+        run: pnpm install
+
+      - name: Install dependencies (CLI)
+        run: cd cloud-cli && pnpm install
+
+      - name: Install dependencies (SDK)
+        run: cd cloud-sdk && pnpm install
+
+      - name: Generate CLI documentation
+        run: cd cloud-cli && pnpm docs:generate
+
+      - name: Generate SDK documentation
+        run: cd cloud-sdk && pnpm docs:generate
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build with VitePress
+        run: pnpm docs:build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
