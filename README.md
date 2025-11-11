@@ -2,7 +2,7 @@
   <img src="./assets/hero-logo.svg" alt="Alternate Futures" width="600" />
 </div>
 
-# ✨ Alternate Futures Documentation ✨
+# ✨ Alternate Futures Cloud Documentation ✨
 
 This repository contains all documentation for the Alternate Futures platform, including:
 
