@@ -73,9 +73,11 @@ jobs:
         run: cd cloud-sdk && pnpm install
 
       - name: Generate CLI documentation
+        continue-on-error: true
         run: cd cloud-cli && pnpm docs:generate
 
       - name: Generate SDK documentation
+        continue-on-error: true
         run: cd cloud-sdk && pnpm docs:generate
 
       - name: Build with VitePress
